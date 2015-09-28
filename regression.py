@@ -5,6 +5,8 @@ from scipy.cluster.vq import whiten
 import sys
 import math as m
 import itertools
+from sklearn.cross_validation import train_test_split
+import random as r
 
 INITIAL_WEIGHT_MAX = .001
 LEARNING_RATE = 0.00001
@@ -39,45 +41,61 @@ def parse(data_file_name, predict_index, ignore_indices, **options):
 	return (x, y)
 
 
-def run_regression(trials, x, y, verbose=False):
+def run_regression(trials, x, y, **options):
 	x_dim = len(x[0])
 	weight_vec = theano.shared(np.random.randn(x_dim, 1) * INITIAL_WEIGHT_MAX)
 	symbolic_x = T.fmatrix('x')
-	symbolic_y = T.fvector	('y')
+	symbolic_y = T.fvector('y')
 	output = T.dot(symbolic_x, weight_vec).transpose()
 	cost = T.sum(T.pow(output - symbolic_y, 2))
 	weight_grad = T.grad(cost, wrt=weight_vec)
 	updates = [[weight_vec, weight_vec - weight_grad * LEARNING_RATE]]
 	train_f = theano.function(inputs=[symbolic_x, symbolic_y], outputs=cost, updates=updates, allow_input_downcast=True)
+	test_f = theano.function(inputs=[symbolic_x, symbolic_y], outputs=cost, allow_input_downcast=True)
 	output_f = theano.function(inputs=[symbolic_x], outputs=output, allow_input_downcast=True)
 	trial_cost = 0.0
 	for i in range(trials):
 		trial_cost = train_f(x, y)
-		if verbose:
+		if options.get('verbose'):
 			print 'estimated y: '
 			print output_f(x)
 			print 'true y'
 			print y
 			print 'sum of squared errors:'
 			print trial_cost
+	if options.get('x_test') is not None and options.get('y_test') is not None:
+		return test_f(options.get('x_test'), options.get('y_test')) / len(options.get('y_test'))
 	return trial_cost
 
 
 def mallow_cp(n, features, SSE_reduced, MSE_full):
 	# formulation taken from http://www.statistics4u.info/fundstat_eng/cc_varsel_mallowscp.html
-	return (SSE_reduced / MSE_full) - n + 2 * features
+	return (SSE_reduced / MSE_full) - n + 2. * features
 
-def aic(n, features, SEE):
-	return -2 * m.log(SSE / n)
+
+def aic(n, features, SSE):
+	return -2. * m.log(SSE / n) + 2. * features
+
+
+def cross_validation(x, y, folds, trials=5000):
+	# test size is the percentage of the data that should be in the test set
+	test_size = float(len(y)) / float(folds) / float(len(y))
+	test_SSE = 0.0
+	for i in range(folds):
+		x_train, x_test, y_train, y_test = train_test_split(
+			x, y, test_size=test_size)
+		test_SSE += (1.0 / folds) * run_regression(trials, x_train, y_train, x_test=x_test, y_test=y_test)
+	return test_SSE
+
 
 def best_subset_selection(x, y, trials=5000):
 	x_dim = len(x[0])
 	y_dim = len(y)
 	best_subset_SSE = [sys.float_info.max for dim in range(x_dim)]
 	best_subset_columns = [[] for dim in range(x_dim)]
-	for num_features in range(1, x_dim + 1):
+	for num_features in range(1, x_dim + 10):
 		for combination in itertools.combinations(range(x_dim), num_features):
-			print combination
+			print 'testing column combination: ' + str(combination)
 			subset_x = x[:, list(combination)]
 			subset_SSE = run_regression(trials, subset_x, y)
 			if subset_SSE < best_subset_SSE[num_features - 1]:
@@ -85,6 +103,15 @@ def best_subset_selection(x, y, trials=5000):
 				best_subset_columns[num_features - 1] = list(combination)
 	print 'best subset columns are: ' + str(best_subset_columns)
 	print 'corresponding best SSE is: ' + str(best_subset_SSE)
+	for i, subset in enumerate(best_subset_columns):
+		ten_fold_error = cross_validation(x[:, subset], y, 10)
+		five_fold_error = cross_validation(x[:, subset], y, 5)
+		aic_score = aic(y_dim, i + i, best_subset_SSE[i])
+		print 'Subset consists of columns: ' + str(subset)
+		print 'Train MSE was ' + str(best_subset_SSE[i] / y_dim)
+		print 'Test MSE is (10 fold cross validation): ' + str(ten_fold_error)
+		print 'Test SSE is (5 fold cross validation): ' + str(five_fold_error)
+		print 'AIC is ' + str(aic_score)
 
 
 def forward_selection(x, y, trials=5000):

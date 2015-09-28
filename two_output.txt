@@ -1,0 +1,51 @@
+Subset consists of columns: [2]
+Train MSE was 0.208313090767
+Test MSE is (10 fold cross validation): 0.184479029179
+Test SSE is (5 fold cross validation): 0.229916606525
+AIC is 3.13742617391
+Subset consists of columns: [2, 3]
+Train MSE was 0.204800448751
+Test MSE is (10 fold cross validation): 0.192746037314
+Test SSE is (5 fold cross validation): 0.206055371335
+AIC is 3.1714383893
+Subset consists of columns: [2, 3, 6]
+Train MSE was 0.203334265268
+Test MSE is (10 fold cross validation): 0.206150379775
+Test SSE is (5 fold cross validation): 0.233813871939
+AIC is 3.18580805442
+Subset consists of columns: [2, 3, 5, 7]
+Train MSE was 0.201020868421
+Test MSE is (10 fold cross validation): 0.227641035754
+Test SSE is (5 fold cross validation): 0.211612575022
+AIC is 3.20869310664
+Subset consists of columns: [2, 3, 5, 6, 7]
+Train MSE was 0.197726435413
+Test MSE is (10 fold cross validation): 0.219371307096
+Test SSE is (5 fold cross validation): 0.228304165946
+AIC is 3.24174168592
+Subset consists of columns: [0, 2, 3, 5, 6, 7]
+Train MSE was 0.197167543189
+Test MSE is (10 fold cross validation): 0.269613030961
+Test SSE is (5 fold cross validation): 0.263203955843
+AIC is 3.2474028773
+Subset consists of columns: [0, 2, 3, 5, 6, 7, 8]
+Train MSE was 0.196659462614
+Test MSE is (10 fold cross validation): 0.21995272587
+Test SSE is (5 fold cross validation): 0.255243220487
+AIC is 3.25256332439
+Subset consists of columns: [0, 1, 2, 3, 5, 6, 7, 8]
+Train MSE was 0.19646572051
+Test MSE is (10 fold cross validation): 0.214414017281
+Test SSE is (5 fold cross validation): 0.233090196558
+AIC is 3.25453462644
+Subset consists of columns: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+Train MSE was 0.196424227132
+Test MSE is (10 fold cross validation): 0.223768673924
+Test SSE is (5 fold cross validation): 0.232741715597
+AIC is 3.2549570692
+
+2 b.) Above is printed out the best subsets of size 1 -> 8 which I discovered. It seems that after the number of features goes beyond 4, my test error starts increasing relative to my training error. This is to be expected because the model is larger and thus more prone to overfitting. My training error is slighty worse than the book's reported training error, but my test error's are all around a factor of two better. Also, I found that the test error is roughly the same after the first feature is chosen. I think the reason for this is that I whitened and mean centered all of my X data beforehand. It seems that the principal component of the data has almost all of the predictive power.
+
+3.) a.)
+
+4 a.) The naive implementation would require a calculation of the Hat Matrix for each of i X_i where X_i is the dataset, X, with element i removed.  
